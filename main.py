@@ -23,12 +23,19 @@ class MainPage(webapp2.RequestHandler):
                 server_name = server.find_class('server-name')[0].text_content().strip()
 
                 if len(server_name):
-                    temp[server_name] = server.find_class('status-icon')[0].get('data-tooltip')
+                    temp[camelcase(server_name)] = server.find_class('status-icon')[0].get('data-tooltip')
 
-            status[category] = temp
+            status[camelcase(category)] = temp
 
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(json.dumps(status))
+
+
+def camelcase(s):
+    s = s.lower()
+    words = s.split(' ')
+    words = [words[0]] + [w.capitalize() for w in words[1:]]
+    return ''.join(words)
 
 
 app = webapp2.WSGIApplication([('/status.json', MainPage)], debug=True)

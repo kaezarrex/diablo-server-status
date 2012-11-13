@@ -1,34 +1,74 @@
-import json
-from lxml import html
-import webapp2
+import os
 
-from google.appengine.api import urlfetch
+from flask import Flask, jsonify
+from lxml import html
+import requests
+import sendgrid
 
 
 SERVER_STATUS_URL = 'http://us.battle.net/d3/en/status'
+last_status = None
+app = Flask(__name__)
 
-class MainPage(webapp2.RequestHandler):
+@app.route('/')
+def hello_world():
+    return 'Hello World!'
 
-    def get(self):
+@app.route('/status.json')
+def status():
+    status = get_status()
+    return jsonify(status)
 
-        res = urlfetch.fetch(SERVER_STATUS_URL)
-        root = html.document_fromstring(res.content)
-        status = dict()
 
-        for box in root.find_class('box'):
-            temp = dict()
-            category = box.find_class('category')[0].text_content()
+@app.route('/email')
+def email():
 
-            for server in box.find_class('server'):
-                server_name = server.find_class('server-name')[0].text_content().strip()
+    global last_status
 
-                if len(server_name):
-                    temp[camelcase(server_name)] = server.find_class('status-icon')[0].get('data-tooltip')
+    status = get_status()['americas']['gameServer']
 
-            status[camelcase(category)] = temp
+    if last_status is None:
+        last_status = status
+        return'first run'
+    elif status == last_status:
+        return 'no change'
 
-        self.response.headers['Content-Type'] = 'application/json'
-        self.response.out.write(json.dumps(status))
+    last_status = status
+
+    user_address = 'dhazinski@gmail.com'
+    sender_address = "app5257489@heroku.com"
+    subject = "Diablo Server: %s" % status
+    body = " "
+
+    s = sendgrid.Sendgrid(os.environ.get('SENDGRID_USERNAME'),
+                          os.environ.get('SENDGRID_PASSWORD'),
+                          secure=True)
+    message = sendgrid.Message(sender_address, subject, body)
+    message.add_to(user_address)
+
+    s.web.send(message)
+
+
+def get_status():
+
+    res = requests.get(SERVER_STATUS_URL)
+
+    root = html.document_fromstring(res.text)
+    status = dict()
+
+    for box in root.find_class('box'):
+        temp = dict()
+        category = box.find_class('category')[0].text_content()
+
+        for server in box.find_class('server'):
+            server_name = server.find_class('server-name')[0].text_content().strip()
+
+            if len(server_name):
+                temp[camelcase(server_name)] = server.find_class('status-icon')[0].get('data-tooltip')
+
+        status[camelcase(category)] = temp
+
+    return status
 
 
 def camelcase(s):
@@ -38,4 +78,7 @@ def camelcase(s):
     return ''.join(words)
 
 
-app = webapp2.WSGIApplication([('/status.json', MainPage)], debug=True)
+if __name__ == '__main__':
+    # Bind to PORT if defined, otherwise default to 5000.
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)

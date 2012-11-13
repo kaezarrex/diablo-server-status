@@ -1,0 +1,14 @@
+Flask
+Jinja2
+Werkzeug
+argparse
+certifi
+chardet
+lxml
+newrelic
+oauthlib
+pyasn1
+requests
+rsa
+sendgrid-python
+wsgiref

@@ -12,3 +12,4 @@ requests
 rsa
 sendgrid-python
 wsgiref
+redis==2.7.2

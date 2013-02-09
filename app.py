@@ -1,23 +1,29 @@
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, json, Response
 from lxml import html
+import redis
 import requests
 import sendgrid
 
 
+redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
+redis = redis.from_url(redis_url)
 SERVER_STATUS_URL = 'http://us.battle.net/d3/en/status'
 last_status = None
 app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return ':)'
 
 @app.route('/status.json')
 def status():
-    status = get_status()
-    return jsonify(status)
+    status = redis.get('status')
+    if status is None:
+        status = json.dumps(get_status())
+        redis.setex('status', status, 10)
+    return Response(status, mimetype='application/json')
 
 
 @app.route('/email')

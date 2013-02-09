@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
-    return ':)'
+    return '<pre><a href="/status.json">/status.json</a></pre>'
 
 @app.route('/status.json')
 def status():

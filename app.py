@@ -58,7 +58,7 @@ def get_status():
 
     for box in root.find_class('box'):
         temp = dict()
-        category = box.find_class('category')[0].text_content()
+        category = box.find_class('header-3')[0].text_content()
 
         for server in box.find_class('server'):
             server_name = server.find_class('server-name')[0].text_content().strip()

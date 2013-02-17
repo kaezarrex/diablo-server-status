@@ -1,1 +1,1 @@
-web: newrelic-admin run-program python app.py
+web: newrelic-admin run-program gunicorn app:app -w 3

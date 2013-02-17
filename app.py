@@ -10,7 +10,6 @@ import sendgrid
 redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
 redis = redis.from_url(redis_url)
 SERVER_STATUS_URL = 'http://us.battle.net/d3/en/status'
-last_status = None
 app = Flask(__name__)
 
 @app.route('/')
@@ -29,17 +28,16 @@ def status():
 @app.route('/email')
 def email():
 
-    global last_status
-
     status = get_status()['americas']['gameServer']
+    last_status = redis.get('americas.game')
 
     if last_status is None:
-        last_status = status
+        redis.set('americas.game', status)
         return'first run'
     elif status == last_status:
         return 'no change'
 
-    last_status = status
+    redis.set('americas.game', status, 10)
 
     user_address = 'dhazinski@gmail.com'
     sender_address = "app5257489@heroku.com"

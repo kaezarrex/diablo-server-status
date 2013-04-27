@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+import os
+
+import redis
+import sendgrid
+
+from diablo.app import get_status
+
+
+redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
+redis = redis.from_url(redis_url)
+
+
+def email():
+
+    status = get_status()['americas']['gameServer']
+    last_status = redis.get('americas.game')
+
+    if last_status is None:
+        redis.set('americas.game', status)
+        return'first run'
+    elif status == last_status:
+        return 'no change'
+
+    redis.set('americas.game', status, 10)
+
+    user_address = 'dhazinski@gmail.com'
+    sender_address = "app5257489@heroku.com"
+    subject = "Diablo Server: %s" % status
+    body = " "
+
+    s = sendgrid.Sendgrid(os.environ.get('SENDGRID_USERNAME'),
+                          os.environ.get('SENDGRID_PASSWORD'),
+                          secure=True)
+    message = sendgrid.Message(sender_address, subject, body)
+    message.add_to(user_address)
+
+    s.web.send(message)
+
+
+if __name__ == '__main__':
+    email()

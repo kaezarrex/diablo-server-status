@@ -4,7 +4,6 @@ from flask import Flask, json, Response
 from lxml import html
 import redis
 import requests
-import sendgrid
 
 
 redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
@@ -16,6 +15,7 @@ app = Flask(__name__)
 def hello_world():
     return '<pre><a href="/status.json">/status.json</a></pre>'
 
+
 @app.route('/status.json')
 def status():
     status = redis.get('status')
@@ -23,34 +23,6 @@ def status():
         status = json.dumps(get_status())
         redis.setex('status', status, 10)
     return Response(status, mimetype='application/json')
-
-
-@app.route('/email')
-def email():
-
-    status = get_status()['americas']['gameServer']
-    last_status = redis.get('americas.game')
-
-    if last_status is None:
-        redis.set('americas.game', status)
-        return'first run'
-    elif status == last_status:
-        return 'no change'
-
-    redis.set('americas.game', status, 10)
-
-    user_address = 'dhazinski@gmail.com'
-    sender_address = "app5257489@heroku.com"
-    subject = "Diablo Server: %s" % status
-    body = " "
-
-    s = sendgrid.Sendgrid(os.environ.get('SENDGRID_USERNAME'),
-                          os.environ.get('SENDGRID_PASSWORD'),
-                          secure=True)
-    message = sendgrid.Message(sender_address, subject, body)
-    message.add_to(user_address)
-
-    s.web.send(message)
 
 
 def get_status():

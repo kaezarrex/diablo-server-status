@@ -11,8 +11,9 @@ redis = redis.from_url(redis_url)
 SERVER_STATUS_URL = 'http://us.battle.net/d3/en/status'
 app = Flask(__name__)
 
+
 @app.route('/')
-def hello_world():
+def index():
     return '<pre><a href="/status.json">/status.json</a></pre>'
 
 
@@ -28,7 +29,6 @@ def status():
 def get_status():
 
     res = requests.get(SERVER_STATUS_URL)
-
     root = html.document_fromstring(res.text)
     status = dict()
 
@@ -37,10 +37,13 @@ def get_status():
         category = box.find_class('header-3')[0].text_content()
 
         for server in box.find_class('server'):
-            server_name = server.find_class('server-name')[0].text_content().strip()
+            server_name = server.find_class('server-name')[0].text_content()
+            server_name = server_name.strip()
 
             if len(server_name):
-                temp[camelcase(server_name)] = server.find_class('status-icon')[0].get('data-tooltip')
+                server_name = camelcase(server_name)
+                status_div = server.find_class('status-icon')[0]
+                temp[server_name] = status_div.get('data-tooltip')
 
         status[camelcase(category)] = temp
 
